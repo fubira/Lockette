@@ -759,7 +759,7 @@ public class Lockette extends PluginCore {
             String text = ChatColor.stripColor(sign.getLine(0)).toLowerCase();
 
             if (text.equals("[private]") || text.equalsIgnoreCase(altPrivate)) {
-                return getUUIDFromMeta(sign, 1);
+                return getUUIDFromMetaOrName(sign, 1);
             } else if (text.equals("[more users]") || text.equalsIgnoreCase(altMoreUsers)) {
                 Block checkBlock = getSignAttachedBlock(block);
 
@@ -768,7 +768,7 @@ public class Lockette extends PluginCore {
 
                     if (signBlock != null) {
                         sign = (Sign) signBlock.getState();
-                        return getUUIDFromMeta(sign, 1);
+                        return getUUIDFromMetaOrName(sign, 1);
                     }
                 }
             }
@@ -776,7 +776,7 @@ public class Lockette extends PluginCore {
             Block signBlock = Lockette.findBlockOwner(block);
             if (signBlock != null) {
                 Sign sign = (Sign) signBlock.getState();
-                return getUUIDFromMeta(sign, 1);
+                return getUUIDFromMetaOrName(sign, 1);
             }
         }
 
@@ -1720,10 +1720,23 @@ public class Lockette extends PluginCore {
         }
     }
 
+    private static Map<Sign, List<MetadataValue>> metaCache = new HashMap<Sign, List<MetadataValue>>();
     private static UUID getUUIDFromMeta(Sign sign, int index) {
-        if (sign.hasMetadata(META_KEY) && sign.getMetadata(META_KEY).size() > 0) {
-            List<MetadataValue> list = sign.getMetadata(META_KEY);
-            // should be only one MetadataValue
+        List<MetadataValue> list = null;
+        if (metaCache.containsKey(sign)) {
+            list = metaCache.get(sign);
+            if (Lockette.DEBUG) {
+                Lockette.log.info("[Lockette] metadata cache found: " + sign.hashCode());
+            }
+        } else if (sign.hasMetadata(META_KEY)) {
+            list = sign.getMetadata(META_KEY);
+            metaCache.put(sign, list);
+            if (Lockette.DEBUG) {
+                Lockette.log.info("[Lockette] metadata cached: " + sign.hashCode());
+            }
+        }
+
+        if (list != null && list.size() > 0) {
             UUID uuid = ((UUID[]) list.get(0).value())[index - 1];
             if (Lockette.DEBUG) {
                 Lockette.log.info("[Lockette] uuid : " + uuid);
@@ -1737,6 +1750,28 @@ public class Lockette extends PluginCore {
         if (sign.hasMetadata(META_KEY)) {
             sign.removeMetadata(META_KEY, plugin);
         }
+        if (metaCache.containsKey(sign)) {
+            metaCache.remove(sign);
+            if (Lockette.DEBUG) {
+                Lockette.log.info("[Lockette] metadata cache removed: " + sign.hashCode());
+            }
+        }
+    }
+
+    private static UUID getUUIDFromMetaOrName(Sign sign, int index) {
+        UUID uuid = getUUIDFromMeta(sign, index);
+        if (uuid != null)
+            return uuid;
+
+        String checkline = ChatColor.stripColor(sign.getLine(index));
+        OfflinePlayer oplayer = Lockette.getOfflinePlayer(checkline);
+        if (oplayer != null && oplayer.hasPlayedBefore()) {
+            if (Lockette.DEBUG) {
+                log.info("[Lockette] converting original format for " + oplayer + " name = " + checkline);
+            }
+            uuid = oplayer.getUniqueId();
+        }
+        return uuid;
     }
 
     static private boolean oldFormatCheck(String signname, String pname) {
