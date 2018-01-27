@@ -1980,24 +1980,26 @@ public class Lockette extends PluginCore {
 
     private static String NAME_HISTORY_URL = "https://api.mojang.com/user/profiles/";
     private static final JSONParser jsonParser = new JSONParser();
+    private static Map<UUID, List<String>> listCache = new HashMap<UUID, List<String>>();
 
     private static List<String> getPreviousNames(UUID uuid) {
+        if (listCache.containsKey(uuid)) {
+            return listCache.get(uuid);
+        }
         String name = null;
         List<String> list = new ArrayList<String>();
 
         try {
-            if (name == null) {
-                HttpURLConnection connection = (HttpURLConnection) new URL(NAME_HISTORY_URL + uuid.toString().replace("-", "") + "/names").openConnection();
-                connection.setConnectTimeout(5000);
-                connection.setReadTimeout(5000);
-                JSONArray array = (JSONArray) jsonParser.parse(new InputStreamReader(connection.getInputStream()));
+            HttpURLConnection connection = (HttpURLConnection) new URL(NAME_HISTORY_URL + uuid.toString().replace("-", "") + "/names").openConnection();
+            JSONArray array = (JSONArray)jsonParser.parse(new InputStreamReader(connection.getInputStream()));
 
-                Iterator<JSONObject> iterator = array.iterator();
-                while (iterator.hasNext()) {
-                    JSONObject obj = (JSONObject) iterator.next();
-                    list.add((String) obj.get("name"));
-                }
+            Iterator<JSONObject> iterator = array.iterator();
+            while (iterator.hasNext()) {
+                JSONObject obj = (JSONObject) iterator.next();
+                list.add((String)obj.get("name"));
             }
+
+            listCache.put(uuid, list);
         } catch (java.net.SocketTimeoutException ste) {
             log.info("[Lockette] Connection timeout (to Mojang site)");
         } catch (Exception ioe) {
