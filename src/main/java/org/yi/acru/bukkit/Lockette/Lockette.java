@@ -746,7 +746,7 @@ public class Lockette extends PluginCore {
 
 
     public static String getProtectedOwner(Block block) {
-        return Bukkit.getOfflinePlayer(getProtectedOwnerUUID(block)).getName();
+        return Lockette.getOfflinePlayer(getProtectedOwnerUUID(block)).getName();
     }
 
     public static UUID getProtectedOwnerUUID(Block block) {
@@ -1687,7 +1687,7 @@ public class Lockette extends PluginCore {
         OfflinePlayer player = null;
         if (!typed.isEmpty() && typed.indexOf("[") != 0) {
             String id = ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', typed));
-            player = Bukkit.getOfflinePlayer(id);
+            player = Lockette.getOfflinePlayer(id);
         }
 
         // if player is "null", then typed string will just be set.
@@ -1789,7 +1789,7 @@ public class Lockette extends PluginCore {
                     return false;
                 }
                 if (uuid != null && update) {
-                    OfflinePlayer p = Bukkit.getOfflinePlayer(uuid);
+                    OfflinePlayer p = Lockette.getOfflinePlayer(uuid);
                     if (Lockette.DEBUG) {
                         Lockette.log.info("[Lockette] updating the old hacked format for " + p);
                     }
@@ -1810,7 +1810,7 @@ public class Lockette extends PluginCore {
                 if (Lockette.DEBUG) {
                     log.info("[Lockette] Checking for original format for " + checkline);
                 }
-                OfflinePlayer oplayer = Bukkit.getOfflinePlayer(checkline);
+                OfflinePlayer oplayer = Lockette.getOfflinePlayer(checkline);
                 if (oplayer != null && oplayer.hasPlayedBefore()) {
                     if (Lockette.DEBUG) {
                         log.info("[Lockette] converting original format for " + oplayer + " name = " + checkline);
@@ -1850,7 +1850,7 @@ public class Lockette extends PluginCore {
 
             if (uuid != null) {
                 // this to remove falsely generated uuid.
-                OfflinePlayer oplayer = Bukkit.getOfflinePlayer(uuid);
+                OfflinePlayer oplayer = Lockette.getOfflinePlayer(uuid);
                 if (!oplayer.hasPlayedBefore()) {
                     if (Lockette.DEBUG) {
                         log.info("[Lockette] removing bad UUID");
@@ -1904,12 +1904,12 @@ public class Lockette extends PluginCore {
 
     // need to put this back in because others might be using it.
     public static boolean isOwner(Block block, String name) {
-        return isOwner(block, Bukkit.getOfflinePlayer(name));
+        return isOwner(block, Lockette.getOfflinePlayer(name));
     }
 
     @Deprecated
     public static boolean isUser(Block block, String name, boolean withGroups) {
-        return isUser(block, Bukkit.getOfflinePlayer(name), withGroups);
+        return isUser(block, Lockette.getOfflinePlayer(name), withGroups);
     }
 
     public static boolean isOwner(Block block, OfflinePlayer player) {
@@ -2007,5 +2007,24 @@ public class Lockette extends PluginCore {
         }
         return list;
     }
-}
 
+    private static Map<String, OfflinePlayer> offlinePlayerCacheByName = new HashMap<String, OfflinePlayer>();
+    private static Map<UUID, OfflinePlayer> offlinePlayerCacheByUUID = new HashMap<UUID, OfflinePlayer>();
+    private static OfflinePlayer getOfflinePlayer(String playerName) {
+        if (offlinePlayerCacheByName.containsKey(playerName))
+            return offlinePlayerCacheByName.get(playerName);
+
+        OfflinePlayer oplayer = Bukkit.getOfflinePlayer(playerName);
+        offlinePlayerCacheByName.put(oplayer.getName(), oplayer);
+        return oplayer;
+    }
+
+    private static OfflinePlayer getOfflinePlayer(UUID uuid) {
+        if (offlinePlayerCacheByUUID.containsKey(uuid))
+            return offlinePlayerCacheByUUID.get(uuid);
+
+        OfflinePlayer oplayer = Bukkit.getOfflinePlayer(uuid);
+        offlinePlayerCacheByUUID.put(oplayer.getUniqueId(), oplayer);
+        return oplayer;
+    }
+}
